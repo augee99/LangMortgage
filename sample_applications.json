@@ -1,0 +1,32 @@
+[
+  {
+    "applicant_name": "Sarah Wilson",
+    "credit_score": 750,
+    "annual_income": 95000.0,
+    "employment_years": 4.0,
+    "loan_amount": 350000.0,
+    "property_value": 450000.0,
+    "down_payment": 100000.0,
+    "debt_to_income_ratio": 0.28
+  },
+  {
+    "applicant_name": "Mike Johnson",
+    "credit_score": 620,
+    "annual_income": 55000.0,
+    "employment_years": 1.5,
+    "loan_amount": 200000.0,
+    "property_value": 250000.0,
+    "down_payment": 50000.0,
+    "debt_to_income_ratio": 0.42
+  },
+  {
+    "applicant_name": "Lisa Chen",
+    "credit_score": 800,
+    "annual_income": 120000.0,
+    "employment_years": 6.0,
+    "loan_amount": 500000.0,
+    "property_value": 600000.0,
+    "down_payment": 100000.0,
+    "debt_to_income_ratio": 0.30
+  }
+]
