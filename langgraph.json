@@ -3,5 +3,7 @@
   "graphs": {
     "mortgage_agent": "./graph.py:create_mortgage_workflow"
   },
-  "env": ".env"
+  "env": ".env",
+  "python_version": "3.11",
+  "configuration_schema": "./configuration.py:MortgageApprovalConfiguration"
 }

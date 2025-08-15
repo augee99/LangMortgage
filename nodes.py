@@ -2,6 +2,22 @@ from typing import Dict, Any
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 from state import MortgageState
+from a2a_property_client import MortgagePropertyValuationClient
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # If python-dotenv is not installed, try manual loading
+    try:
+        with open('.env', 'r') as f:
+            for line in f:
+                if '=' in line and not line.startswith('#'):
+                    key, value = line.strip().split('=', 1)
+                    os.environ[key] = value
+    except FileNotFoundError:
+        pass
 
 # Initialize Google LLM - will be created in each function to avoid auth issues
 def get_llm():
@@ -273,5 +289,89 @@ def final_decision_node(state: MortgageState) -> MortgageState:
     state['decision_reason'] = reason
     state['confidence_score'] = confidence
     state['current_step'] = "final_decision_completed"
+    
+    return state
+
+def property_valuation_node(state: MortgageState) -> MortgageState:
+    """New Node: Get property valuation via A2A communication with PropertyValuation agent"""
+    
+    # Extract property information from mortgage application
+    property_info = {
+        "property_address": state.get('property_address', 'Address not provided'),
+        "property_type": state.get('property_type', 'single_family'),
+        "square_footage": state.get('square_footage'),
+        "bedrooms": state.get('bedrooms'),
+        "bathrooms": state.get('bathrooms'),
+        "year_built": state.get('year_built'),
+        "lot_size": state.get('lot_size')
+    }
+    
+    prompt = f"""
+    You are coordinating with a property valuation specialist for mortgage approval. 
+    
+    Property Information:
+    Address: {property_info['property_address']}
+    Type: {property_info['property_type']}
+    Square Footage: {property_info.get('square_footage', 'Not provided')}
+    Bedrooms: {property_info.get('bedrooms', 'Not provided')}
+    Bathrooms: {property_info.get('bathrooms', 'Not provided')}
+    Year Built: {property_info.get('year_built', 'Not provided')}
+    
+    Loan Information:
+    Loan Amount: ${state['loan_amount']:,.2f}
+    Stated Property Value: ${state['property_value']:,.2f}
+    
+    Requesting professional property valuation to verify loan-to-value ratio for mortgage decision.
+    This valuation will be used to assess collateral risk and determine final loan terms.
+    """
+    
+    llm = get_llm()
+    response = llm.invoke(prompt)
+    
+    # Initialize A2A client and request valuation
+    prop_val_client = MortgagePropertyValuationClient()
+    valuation_response = prop_val_client.request_property_valuation(property_info)
+    
+    if valuation_response['status'] == 'SUCCESS':
+        # Extract LTV information
+        ltv_analysis = prop_val_client.extract_loan_to_value_info(
+            valuation_response, 
+            state['loan_amount']
+        )
+        
+        valuation_result = {
+            "status": "SUCCESS",
+            "appraised_value": valuation_response['valuation_data']['property_valuation']['estimated_value'],
+            "confidence_level": valuation_response['valuation_data']['property_valuation']['confidence_level'],
+            "confidence_score": valuation_response['valuation_data']['property_valuation']['confidence_score'],
+            "valuation_range": valuation_response['valuation_data']['property_valuation']['valuation_range'],
+            "ltv_analysis": ltv_analysis,
+            "valuation_flags": valuation_response['valuation_data']['valuation_flags']
+        }
+        
+        # Compare appraised value vs stated value
+        appraised_value = valuation_result['appraised_value']
+        stated_value = state['property_value']
+        value_variance = abs(appraised_value - stated_value) / stated_value
+        
+        if value_variance > 0.10:  # More than 10% difference
+            state['warnings'].append(f"Significant variance between stated (${stated_value:,.0f}) and appraised (${appraised_value:,.0f}) values")
+        
+        # Update property value with appraised value for downstream calculations
+        state['property_value'] = appraised_value
+        
+    else:
+        valuation_result = {
+            "status": "ERROR",
+            "error_message": valuation_response.get('error_message', 'Property valuation failed'),
+            "appraised_value": state['property_value'],  # Fall back to stated value
+            "confidence_level": "LOW",
+            "ltv_analysis": {"ltv_available": False}
+        }
+        
+        state['errors'].append(f"Property valuation failed: {valuation_result['error_message']}")
+    
+    state['property_valuation_result'] = valuation_result
+    state['current_step'] = "property_valuation_completed"
     
     return state

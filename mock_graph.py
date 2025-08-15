@@ -1,32 +1,32 @@
+"""
+Mock version of graph.py that uses mock nodes instead of LLM-based nodes
+Used for testing and demonstration without requiring API credentials
+"""
+
 from langgraph.graph import StateGraph, END
 from state import MortgageState
-from configuration import MortgageApprovalConfiguration
-from nodes import (
-    data_validation_node,
-    credit_assessment_node,
-    income_verification_node,
-    property_valuation_node,
-    risk_analysis_node,
-    final_decision_node
+from mock_nodes import (
+    mock_data_validation_node,
+    mock_credit_assessment_node,
+    mock_income_verification_node,
+    mock_property_valuation_node,
+    mock_risk_analysis_node,
+    mock_final_decision_node
 )
 
-# Import for LangGraph SaaS platform compatibility
-from typing import Optional
-from langchain_core.runnables import RunnableConfig
-
-def create_mortgage_workflow():
-    """Create the 6-node mortgage validation workflow with property valuation"""
+def create_mock_mortgage_workflow():
+    """Create the 6-node mortgage validation workflow with mock nodes"""
     
     # Create the state graph
     workflow = StateGraph(MortgageState)
     
-    # Add nodes
-    workflow.add_node("data_validation", data_validation_node)
-    workflow.add_node("credit_assessment", credit_assessment_node)
-    workflow.add_node("income_verification", income_verification_node)
-    workflow.add_node("property_valuation", property_valuation_node)
-    workflow.add_node("risk_analysis", risk_analysis_node)
-    workflow.add_node("decision", final_decision_node)
+    # Add mock nodes
+    workflow.add_node("data_validation", mock_data_validation_node)
+    workflow.add_node("credit_assessment", mock_credit_assessment_node)
+    workflow.add_node("income_verification", mock_income_verification_node)
+    workflow.add_node("property_valuation", mock_property_valuation_node)
+    workflow.add_node("risk_analysis", mock_risk_analysis_node)
+    workflow.add_node("decision", mock_final_decision_node)
     
     # Define the flow
     workflow.set_entry_point("data_validation")
@@ -44,9 +44,8 @@ def create_mortgage_workflow():
     
     return app
 
-# Alternative conditional flow (optional enhancement)
-def create_conditional_mortgage_workflow():
-    """Create mortgage workflow with conditional routing based on validation results"""
+def create_mock_conditional_mortgage_workflow():
+    """Create mortgage workflow with conditional routing using mock nodes"""
     
     def should_continue_after_validation(state: MortgageState):
         """Route based on data validation results"""
@@ -68,13 +67,13 @@ def create_conditional_mortgage_workflow():
     
     workflow = StateGraph(MortgageState)
     
-    # Add nodes
-    workflow.add_node("data_validation", data_validation_node)
-    workflow.add_node("credit_assessment", credit_assessment_node)
-    workflow.add_node("income_verification", income_verification_node)
-    workflow.add_node("property_valuation", property_valuation_node)
-    workflow.add_node("risk_analysis", risk_analysis_node)
-    workflow.add_node("decision", final_decision_node)
+    # Add mock nodes
+    workflow.add_node("data_validation", mock_data_validation_node)
+    workflow.add_node("credit_assessment", mock_credit_assessment_node)
+    workflow.add_node("income_verification", mock_income_verification_node)
+    workflow.add_node("property_valuation", mock_property_valuation_node)
+    workflow.add_node("risk_analysis", mock_risk_analysis_node)
+    workflow.add_node("decision", mock_final_decision_node)
     
     # Define conditional flow
     workflow.set_entry_point("data_validation")
