@@ -5,5 +5,9 @@
   },
   "env": ".env",
   "python_version": "3.11",
-  "configuration_schema": "./configuration.py:MortgageApprovalConfiguration"
+  "configuration_schema": "./configuration.py:MortgageApprovalConfiguration",
+  "git": {
+    "repository": "https://github.com/augee99/LangMortgage.git",
+    "branch": "feature/a2a-integration"
+  }
 }
