@@ -12,13 +12,26 @@ from typing import Dict, Any, Optional
 # Platform detection
 def is_langgraph_platform():
     """Detect if running on LangGraph platform"""
-    return (
-        os.getenv('LANGGRAPH_CLOUD') == 'true' or 
-        os.getenv('LANGGRAPH_PLATFORM') == 'true' or
-        'langgraph.cloud' in os.getenv('HOSTNAME', '') or
-        '/api/' in os.getenv('PATH_INFO', '') or
-        'langgraph-api' in str(os.getenv('SERVER_SOFTWARE', ''))
-    )
+    # Check various environment indicators
+    checks = [
+        ('LANGGRAPH_CLOUD', os.getenv('LANGGRAPH_CLOUD') == 'true'),
+        ('LANGGRAPH_PLATFORM', os.getenv('LANGGRAPH_PLATFORM') == 'true'),
+        ('HOSTNAME contains langgraph.cloud', 'langgraph.cloud' in os.getenv('HOSTNAME', '')),
+        ('PATH_INFO contains /api/', '/api/' in os.getenv('PATH_INFO', '')),
+        ('SERVER_SOFTWARE contains langgraph-api', 'langgraph-api' in str(os.getenv('SERVER_SOFTWARE', ''))),
+        ('Has LANGGRAPH_* env vars', any(key.startswith('LANGGRAPH_') for key in os.environ.keys())),
+        ('Running in container', os.path.exists('/.dockerenv') or os.getenv('KUBERNETES_SERVICE_HOST')),
+    ]
+    
+    is_platform = any(check[1] for check in checks)
+    
+    # Debug output
+    print("🔍 Platform Detection Results:")
+    for name, result in checks:
+        print(f"   {name}: {result}")
+    print(f"   🎯 Platform detected: {is_platform}")
+    
+    return is_platform
 
 try:
     from langgraph_sdk import get_client
@@ -31,8 +44,17 @@ class MortgagePropertyValuationClient:
     """Client for mortgage agent to communicate with property valuation agent"""
     
     def __init__(self, use_mock=None, property_agent_url=None):
+        print("🚀 Initializing MortgagePropertyValuationClient...")
+        
         # Auto-detect platform and configuration
         self.is_platform = is_langgraph_platform()
+        
+        # Debug environment variables
+        print("🔍 Environment Variables Check:")
+        env_vars = ['PROPVALUE_AGENT_URL', 'PROPERTY_VALUATION_AGENT_URL', 'LANGGRAPH_CLOUD', 'LANGGRAPH_PLATFORM']
+        for var in env_vars:
+            value = os.getenv(var)
+            print(f"   {var}: {value if value else 'Not set'}")
         
         # Get PropValue agent URL from environment or parameter
         self.property_agent_url = (
@@ -41,12 +63,21 @@ class MortgagePropertyValuationClient:
             os.getenv('PROPERTY_VALUATION_AGENT_URL')
         )
         
+        print(f"🌐 Final PropValue URL: {self.property_agent_url}")
+        
         # Determine if we should use mock mode
         if use_mock is None:
             # Auto-decide: use real A2A if on platform and URL available
             self.use_mock = not (self.is_platform and self.property_agent_url)
+            
+            # TEMPORARY: Force A2A if URL is available (for testing)
+            if self.property_agent_url and not self.use_mock:
+                print("🔧 Forcing A2A mode for testing (URL available)")
+                self.use_mock = False
         else:
             self.use_mock = use_mock
+        
+        print(f"🎭 Final mock mode decision: {self.use_mock}")
         
         # Initialize platform client
         self.platform_mode = False

@@ -335,8 +335,18 @@ def property_valuation_node(state: MortgageState) -> MortgageState:
     response = llm.invoke(prompt)
     
     # Initialize A2A client and request valuation
+    print("🔍 Initializing A2A client for property valuation...")
     prop_val_client = MortgagePropertyValuationClient()
+    
+    # Debug information
+    print(f"📊 Platform detected: {prop_val_client.is_platform}")
+    print(f"🌐 PropValue URL: {prop_val_client.property_agent_url}")
+    print(f"🎭 Using mock mode: {prop_val_client.use_mock}")
+    print(f"🔧 Platform mode: {prop_val_client.platform_mode}")
+    
+    print("📤 Requesting property valuation...")
     valuation_response = prop_val_client.request_property_valuation(property_info)
+    print(f"📥 Valuation response status: {valuation_response.get('status', 'Unknown')}")
     
     if valuation_response['status'] == 'SUCCESS':
         # Extract LTV information
