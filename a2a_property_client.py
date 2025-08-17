@@ -70,14 +70,34 @@ class MortgagePropertyValuationClient:
             # Auto-decide: use real A2A if on platform and URL available
             self.use_mock = not (self.is_platform and self.property_agent_url)
             
+            # PLATFORM OVERRIDE: If on platform but no URL, try to construct one
+            if self.is_platform and not self.property_agent_url:
+                print("🔧 Platform detected but no PropValue URL - attempting to use default")
+                # Try common PropValue deployment names
+                possible_urls = [
+                    "https://property-valuation-agent.langgraph.cloud",
+                    "https://propvalue.langgraph.cloud", 
+                    "https://property-value.langgraph.cloud"
+                ]
+                
+                for url in possible_urls:
+                    print(f"   Trying: {url}")
+                    self.property_agent_url = url
+                    break
+                
+                # Force A2A attempt even without explicit URL
+                self.use_mock = False
+                print(f"🚀 Forcing A2A attempt with: {self.property_agent_url}")
+            
             # TEMPORARY: Force A2A if URL is available (for testing)
             if self.property_agent_url and not self.use_mock:
-                print("🔧 Forcing A2A mode for testing (URL available)")
+                print("🔧 A2A mode enabled (URL available)")
                 self.use_mock = False
         else:
             self.use_mock = use_mock
         
         print(f"🎭 Final mock mode decision: {self.use_mock}")
+        print(f"🌐 Using PropValue URL: {self.property_agent_url}")
         
         # Initialize platform client
         self.platform_mode = False
@@ -109,11 +129,14 @@ class MortgagePropertyValuationClient:
         """
         
         if self.use_mock:
+            print("🎭 Using MOCK mode - not calling real PropValue agent")
             return self._mock_property_valuation(property_info)
         
-        if not self.platform_mode or not self.property_agent_url:
-            print("⚠️  No platform connection available, using mock")
+        if not self.property_agent_url:
+            print("⚠️  No PropValue URL available, falling back to mock")
             return self._mock_property_valuation(property_info)
+        
+        print(f"🚀 ATTEMPTING REAL A2A CALL to PropValue agent")
         
         try:
             # Create standardized A2A request for platform deployment

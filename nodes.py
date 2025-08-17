@@ -336,6 +336,15 @@ def property_valuation_node(state: MortgageState) -> MortgageState:
     
     # Initialize A2A client and request valuation
     print("🔍 Initializing A2A client for property valuation...")
+    
+    # TESTING: Force A2A with explicit URL (comment out for normal operation)
+    # Replace with your actual PropValue deployment URL for testing
+    test_propvalue_url = "https://your-propvalue-deployment.langgraph.cloud"
+    
+    # Uncomment the next line to test A2A communication:
+    # prop_val_client = MortgagePropertyValuationClient(use_mock=False, property_agent_url=test_propvalue_url)
+    
+    # Default initialization (uses environment variables or mock)
     prop_val_client = MortgagePropertyValuationClient()
     
     # Debug information
