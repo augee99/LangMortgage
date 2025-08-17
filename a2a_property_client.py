@@ -161,14 +161,14 @@ class MortgagePropertyValuationClient:
             if self.client and LangGraph_SDK_available:
                 # Use LangGraph SDK - try multiple assistant IDs
                 assistant_ids = [
-                    "995669b4-14a3-4352-a6d4-2b269c9b74da", # User provided assistant ID
+                    "123e4567-e89b-12d3-a456-426614174000", # Correct assistant ID from platform
+                    "property_valuation_agent",              # Graph ID
+                    "995669b4-14a3-4352-a6d4-2b269c9b74da", # Previous attempt
                     "fnma-property-value-agent-a",           # Based on deployment name
                     "property_value_agent",                  # Underscore format
                     "property-value-agent",                  # Dash format
-                    "property_valuation_agent",              # Default
                     "propvalue",                             # Short name
                     "fnma-property-value-agent",             # Without suffix
-                    None                                     # Default assistant
                 ]
                 
                 for assistant_id in assistant_ids:
