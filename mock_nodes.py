@@ -4,8 +4,14 @@ Used for testing and demonstration purposes
 """
 
 from typing import Dict, Any
-from .state import MortgageState
-from .a2a_property_client import MortgagePropertyValuationClient
+
+# Import with fallback for platform deployment
+try:
+    from .state import MortgageState
+    from .a2a_property_client import MortgagePropertyValuationClient
+except ImportError:
+    from state import MortgageState
+    from a2a_property_client import MortgagePropertyValuationClient
 
 def mock_data_validation_node(state: MortgageState) -> MortgageState:
     """Mock Node 1: Validate input loan application data"""

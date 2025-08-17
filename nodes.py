@@ -1,8 +1,14 @@
 from typing import Dict, Any
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
-from .state import MortgageState
-from .a2a_property_client import MortgagePropertyValuationClient
+
+# Import with fallback for platform deployment
+try:
+    from .state import MortgageState
+    from .a2a_property_client import MortgagePropertyValuationClient
+except ImportError:
+    from state import MortgageState
+    from a2a_property_client import MortgagePropertyValuationClient
 
 # Load environment variables from .env file
 try:

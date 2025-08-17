@@ -1,14 +1,30 @@
 from langgraph.graph import StateGraph, END
-from .state import MortgageState
-from .configuration import MortgageApprovalConfiguration
-from .nodes import (
-    data_validation_node,
-    credit_assessment_node,
-    income_verification_node,
-    property_valuation_node,
-    risk_analysis_node,
-    final_decision_node
-)
+
+# Import with fallback for platform deployment
+try:
+    # Try relative imports first (for package usage)
+    from .state import MortgageState
+    from .configuration import MortgageApprovalConfiguration
+    from .nodes import (
+        data_validation_node,
+        credit_assessment_node,
+        income_verification_node,
+        property_valuation_node,
+        risk_analysis_node,
+        final_decision_node
+    )
+except ImportError:
+    # Fallback to absolute imports for platform deployment
+    from state import MortgageState
+    from configuration import MortgageApprovalConfiguration
+    from nodes import (
+        data_validation_node,
+        credit_assessment_node,
+        income_verification_node,
+        property_valuation_node,
+        risk_analysis_node,
+        final_decision_node
+    )
 
 # Import for LangGraph SaaS platform compatibility
 from typing import Optional

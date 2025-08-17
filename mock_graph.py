@@ -4,15 +4,31 @@ Used for testing and demonstration without requiring API credentials
 """
 
 from langgraph.graph import StateGraph, END
-from .state import MortgageState
-from .mock_nodes import (
-    mock_data_validation_node,
-    mock_credit_assessment_node,
-    mock_income_verification_node,
-    mock_property_valuation_node,
-    mock_risk_analysis_node,
-    mock_final_decision_node
-)
+
+# Import with fallback for platform deployment
+try:
+    from .state import MortgageState
+except ImportError:
+    from state import MortgageState
+
+try:
+    from .mock_nodes import (
+        mock_data_validation_node,
+        mock_credit_assessment_node,
+        mock_income_verification_node,
+        mock_property_valuation_node,
+        mock_risk_analysis_node,
+        mock_final_decision_node
+    )
+except ImportError:
+    from mock_nodes import (
+        mock_data_validation_node,
+        mock_credit_assessment_node,
+        mock_income_verification_node,
+        mock_property_valuation_node,
+        mock_risk_analysis_node,
+        mock_final_decision_node
+    )
 
 def create_mock_mortgage_workflow():
     """Create the 6-node mortgage validation workflow with mock nodes"""

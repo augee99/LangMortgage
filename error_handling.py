@@ -6,7 +6,12 @@ Provides robust error handling for LangGraph SaaS deployment
 import logging
 import traceback
 from typing import Dict, Any, Optional
-from .state import MortgageState
+
+# Import with fallback for platform deployment
+try:
+    from .state import MortgageState
+except ImportError:
+    from state import MortgageState
 
 # Configure logging for SaaS platform
 logger = logging.getLogger(__name__)
