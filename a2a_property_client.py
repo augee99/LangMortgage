@@ -75,6 +75,7 @@ class MortgagePropertyValuationClient:
                 print("🔧 Platform detected but no PropValue URL - attempting to use default")
                 # Try common PropValue deployment names
                 possible_urls = [
+                    "https://fnma-property-value-agent-a-847d714161b5593186939c2aaa3e7c33.us.langgraph.app",
                     "https://property-valuation-agent.langgraph.cloud",
                     "https://propvalue.langgraph.cloud", 
                     "https://property-value.langgraph.cloud"
@@ -160,10 +161,14 @@ class MortgagePropertyValuationClient:
             if self.client and LangGraph_SDK_available:
                 # Use LangGraph SDK - try multiple assistant IDs
                 assistant_ids = [
-                    "property_valuation_agent",  # Default
-                    "property-valuation-agent",  # Dash format
-                    "propvalue",                 # Short name
-                    None                         # Default assistant
+                    "995669b4-14a3-4352-a6d4-2b269c9b74da", # User provided assistant ID
+                    "fnma-property-value-agent-a",           # Based on deployment name
+                    "property_value_agent",                  # Underscore format
+                    "property-value-agent",                  # Dash format
+                    "property_valuation_agent",              # Default
+                    "propvalue",                             # Short name
+                    "fnma-property-value-agent",             # Without suffix
+                    None                                     # Default assistant
                 ]
                 
                 for assistant_id in assistant_ids:
@@ -171,6 +176,7 @@ class MortgagePropertyValuationClient:
                         print(f"🔍 Trying assistant_id: {assistant_id}")
                         
                         create_params = {
+                            "thread_id": None,  # Let LangGraph create a new thread
                             "input": valuation_request,
                             "config": {"configurable": {"enable_a2a_communication": True}}
                         }
