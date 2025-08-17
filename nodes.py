@@ -312,40 +312,27 @@ def property_valuation_node(state: MortgageState) -> MortgageState:
         "lot_size": state.get('lot_size')
     }
     
-    prompt = f"""
-    You are coordinating with a property valuation specialist for mortgage approval. 
-    
-    Property Information:
-    Address: {property_info['property_address']}
-    Type: {property_info['property_type']}
-    Square Footage: {property_info.get('square_footage', 'Not provided')}
-    Bedrooms: {property_info.get('bedrooms', 'Not provided')}
-    Bathrooms: {property_info.get('bathrooms', 'Not provided')}
-    Year Built: {property_info.get('year_built', 'Not provided')}
-    
-    Loan Information:
-    Loan Amount: ${state['loan_amount']:,.2f}
-    Stated Property Value: ${state['property_value']:,.2f}
-    
-    Requesting professional property valuation to verify loan-to-value ratio for mortgage decision.
-    This valuation will be used to assess collateral risk and determine final loan terms.
-    """
-    
-    llm = get_llm()
-    response = llm.invoke(prompt)
+    # Log the property valuation request
+    print(f"🏠 Initiating property valuation for mortgage approval")
+    print(f"   Property: {property_info['property_address']}")
+    print(f"   Loan Amount: ${state['loan_amount']:,.2f}")
+    print(f"   Stated Value: ${state['property_value']:,.2f}")
     
     # Initialize A2A client and request valuation
     print("🔍 Initializing A2A client for property valuation...")
     
-    # TESTING: Force A2A with explicit URL (comment out for normal operation)
-    # Replace with your actual PropValue deployment URL for testing
-    test_propvalue_url = "https://your-propvalue-deployment.langgraph.cloud"
+    # Try to get PropValue URL from environment variables
+    propvalue_url = os.getenv('PROPVALUE_AGENT_URL') or os.getenv('PROPERTY_VALUATION_AGENT_URL')
     
-    # Uncomment the next line to test A2A communication:
-    # prop_val_client = MortgagePropertyValuationClient(use_mock=False, property_agent_url=test_propvalue_url)
-    
-    # Default initialization (uses environment variables or mock)
-    prop_val_client = MortgagePropertyValuationClient()
+    if propvalue_url:
+        print(f"🌐 Found PropValue URL in environment: {propvalue_url}")
+        # Force real A2A communication when URL is available
+        prop_val_client = MortgagePropertyValuationClient(use_mock=False, property_agent_url=propvalue_url)
+    else:
+        print("⚠️  No PropValue URL found in environment variables")
+        print("   Set PROPVALUE_AGENT_URL to enable real A2A communication")
+        # Fall back to auto-detection (likely mock mode)
+        prop_val_client = MortgagePropertyValuationClient()
     
     # Debug information
     print(f"📊 Platform detected: {prop_val_client.is_platform}")

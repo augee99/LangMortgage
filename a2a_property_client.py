@@ -103,19 +103,21 @@ class MortgagePropertyValuationClient:
         self.platform_mode = False
         self.client = None
         
-        if not self.use_mock and self.is_platform and self.property_agent_url:
+        if not self.use_mock and self.property_agent_url:
             try:
                 if LangGraph_SDK_available and get_client:
+                    print(f"🔗 Attempting SDK connection to: {self.property_agent_url}")
                     self.client = get_client(url=self.property_agent_url)
                     self.platform_mode = True
-                    print(f"✅ Connected to PropValue agent: {self.property_agent_url}")
+                    print(f"✅ SDK connected to PropValue agent: {self.property_agent_url}")
                 else:
-                    print("⚠️  LangGraph SDK not available, using HTTP requests")
+                    print("⚠️  LangGraph SDK not available, will use HTTP requests")
                     self.platform_mode = True  # Use HTTP instead
+                    print(f"🌐 HTTP mode enabled for: {self.property_agent_url}")
             except Exception as e:
-                print(f"⚠️  Could not connect to PropValue agent: {e}")
-                print("🔄 Falling back to mock mode")
-                self.use_mock = True
+                print(f"⚠️  SDK connection failed: {e}")
+                print("🌐 Will attempt HTTP requests instead")
+                self.platform_mode = True  # Still try HTTP
         
     def request_property_valuation(self, property_info: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -156,66 +158,157 @@ class MortgagePropertyValuationClient:
             print(f"📤 Sending A2A request to PropValue: {self.property_agent_url}")
             
             if self.client and LangGraph_SDK_available:
-                # Use LangGraph SDK
-                response = self.client.runs.create(
-                    assistant_id="property_valuation_agent",
-                    input=valuation_request,
-                    config={"configurable": {"enable_a2a_communication": True}}
-                )
+                # Use LangGraph SDK - try multiple assistant IDs
+                assistant_ids = [
+                    "property_valuation_agent",  # Default
+                    "property-valuation-agent",  # Dash format
+                    "propvalue",                 # Short name
+                    None                         # Default assistant
+                ]
                 
-                # Wait for completion and get result
-                final_response = self.client.runs.wait(response["run_id"])
+                for assistant_id in assistant_ids:
+                    try:
+                        print(f"🔍 Trying assistant_id: {assistant_id}")
+                        
+                        create_params = {
+                            "input": valuation_request,
+                            "config": {"configurable": {"enable_a2a_communication": True}}
+                        }
+                        
+                        if assistant_id:
+                            create_params["assistant_id"] = assistant_id
+                        
+                        response = self.client.runs.create(**create_params)
+                        print(f"✅ Run created with ID: {response.get('run_id')}")
+                        
+                        # Wait for completion and get result
+                        final_response = self.client.runs.wait(response["run_id"])
+                        print(f"📥 Final response status: {final_response.get('status')}")
+                        
+                        if final_response.get("status") == "success":
+                            result_data = final_response.get("output", {})
+                            
+                            # Try different output formats
+                            valuation_result = (
+                                result_data.get("valuation_result") or
+                                result_data.get("output") or
+                                result_data
+                            )
+                            
+                            print(f"🎯 Found valuation result: {bool(valuation_result)}")
+                            
+                            return {
+                                "status": "SUCCESS",
+                                "valuation_data": {
+                                    "property_valuation": valuation_result
+                                },
+                                "raw_response": final_response
+                            }
+                        else:
+                            print(f"⚠️  Assistant {assistant_id} failed: {final_response.get('error')}")
+                            continue
+                            
+                    except Exception as e:
+                        print(f"❌ Assistant {assistant_id} error: {str(e)}")
+                        continue
                 
-                if final_response.get("status") == "success":
-                    result_data = final_response.get("output", {})
-                    valuation_result = result_data.get("valuation_result", {})
-                    
-                    return {
-                        "status": "SUCCESS",
-                        "valuation_data": {
-                            "property_valuation": valuation_result
-                        },
-                        "raw_response": final_response
-                    }
-                else:
-                    return {
-                        "status": "ERROR",
-                        "error_message": final_response.get("error", "Property valuation failed"),
-                        "valuation_data": None
-                    }
+                # If all assistant IDs failed
+                return {
+                    "status": "ERROR", 
+                    "error_message": "All assistant ID attempts failed",
+                    "valuation_data": None
+                }
             else:
-                # Use HTTP requests as fallback
-                headers = {"Content-Type": "application/json"}
+                # Use HTTP requests as fallback with proper LangGraph API format
+                headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
                 
-                response = requests.post(
+                # Try different API endpoints
+                endpoints = [
                     f"{self.property_agent_url}/runs",
-                    json={
-                        "assistant_id": "property_valuation_agent",
-                        "input": valuation_request,
-                        "config": {"configurable": {"enable_a2a_communication": True}}
-                    },
-                    headers=headers,
-                    timeout=30
-                )
+                    f"{self.property_agent_url}/invoke", 
+                    f"{self.property_agent_url}/stream",
+                    f"{self.property_agent_url}"
+                ]
                 
-                if response.status_code == 200:
-                    result = response.json()
-                    output = result.get("output", {})
-                    valuation_result = output.get("valuation_result", {})
-                    
-                    return {
-                        "status": "SUCCESS",
-                        "valuation_data": {
-                            "property_valuation": valuation_result
-                        },
-                        "raw_response": result
-                    }
-                else:
-                    return {
-                        "status": "ERROR",
-                        "error_message": f"HTTP request failed: {response.status_code}",
-                        "valuation_data": None
-                    }
+                for endpoint in endpoints:
+                    try:
+                        print(f"🔍 Trying HTTP endpoint: {endpoint}")
+                        
+                        # Try different payload formats
+                        payloads = [
+                            # Standard LangGraph format
+                            {
+                                "input": valuation_request,
+                                "config": {"configurable": {"enable_a2a_communication": True}}
+                            },
+                            # Alternative format with assistant_id
+                            {
+                                "assistant_id": "property_valuation_agent",
+                                "input": valuation_request,
+                                "config": {"configurable": {"enable_a2a_communication": True}}
+                            },
+                            # Direct input format
+                            valuation_request
+                        ]
+                        
+                        for i, payload in enumerate(payloads):
+                            print(f"   📤 Trying payload format {i+1}")
+                            
+                            response = requests.post(
+                                endpoint,
+                                json=payload,
+                                headers=headers,
+                                timeout=30
+                            )
+                            
+                            print(f"   📥 HTTP {response.status_code}: {endpoint}")
+                            
+                            if response.status_code == 200:
+                                try:
+                                    result = response.json()
+                                    
+                                    # Try different output extraction methods
+                                    output = (
+                                        result.get("output", {}) or
+                                        result.get("valuation_result", {}) or
+                                        result
+                                    )
+                                    
+                                    valuation_result = (
+                                        output.get("valuation_result") or
+                                        output.get("output") or
+                                        output
+                                    )
+                                    
+                                    if valuation_result and isinstance(valuation_result, dict):
+                                        print(f"✅ HTTP success with endpoint {endpoint}")
+                                        return {
+                                            "status": "SUCCESS",
+                                            "valuation_data": {
+                                                "property_valuation": valuation_result
+                                            },
+                                            "raw_response": result
+                                        }
+                                        
+                                except Exception as parse_error:
+                                    print(f"   ❌ JSON parse error: {parse_error}")
+                                    continue
+                            
+                            elif response.status_code in [404, 405]:
+                                break  # Wrong endpoint, try next one
+                                
+                    except Exception as e:
+                        print(f"❌ HTTP error for {endpoint}: {str(e)}")
+                        continue
+                
+                return {
+                    "status": "ERROR",
+                    "error_message": "All HTTP endpoint attempts failed",
+                    "valuation_data": None
+                }
                 
         except Exception as e:
             print(f"❌ A2A communication failed: {str(e)}")
