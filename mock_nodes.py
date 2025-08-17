@@ -142,6 +142,9 @@ def mock_property_valuation_node(state: MortgageState) -> MortgageState:
         value_variance = abs(appraised_value - stated_value) / stated_value
         
         if value_variance > 0.10:  # More than 10% difference
+            # Ensure warnings list exists
+            if 'warnings' not in state:
+                state['warnings'] = []
             state['warnings'].append(f"Significant variance between stated (${stated_value:,.0f}) and appraised (${appraised_value:,.0f}) values")
         
         # Update property value with appraised value for downstream calculations
@@ -156,6 +159,9 @@ def mock_property_valuation_node(state: MortgageState) -> MortgageState:
             "ltv_analysis": {"ltv_available": False}
         }
         
+        # Ensure errors list exists
+        if 'errors' not in state:
+            state['errors'] = []
         state['errors'].append(f"Property valuation failed: {valuation_result['error_message']}")
     
     state['property_valuation_result'] = valuation_result
