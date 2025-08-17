@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
-from state import MortgageState
-from configuration import MortgageApprovalConfiguration
-from nodes import (
+from .state import MortgageState
+from .configuration import MortgageApprovalConfiguration
+from .nodes import (
     data_validation_node,
     credit_assessment_node,
     income_verification_node,

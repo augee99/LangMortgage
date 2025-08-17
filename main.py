@@ -4,8 +4,8 @@ Main execution file for the LangMortgage agent
 
 import os
 from dotenv import load_dotenv
-from graph import create_mortgage_workflow
-from state import MortgageState
+from .graph import create_mortgage_workflow
+from .state import MortgageState
 
 # Load environment variables
 load_dotenv()

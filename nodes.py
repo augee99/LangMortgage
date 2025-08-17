@@ -1,8 +1,8 @@
 from typing import Dict, Any
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
-from state import MortgageState
-from a2a_property_client import MortgagePropertyValuationClient
+from .state import MortgageState
+from .a2a_property_client import MortgagePropertyValuationClient
 
 # Load environment variables from .env file
 try:

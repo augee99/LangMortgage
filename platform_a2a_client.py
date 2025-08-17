@@ -8,7 +8,7 @@ import json
 import requests
 import uuid
 from typing import Dict, Any, Optional
-from state import MortgageState
+from .state import MortgageState
 
 class LangGraphA2AClient:
     """A2A client for LangGraph platform communication"""

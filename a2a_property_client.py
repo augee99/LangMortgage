@@ -1,37 +1,36 @@
 """
 A2A Client for integrating with Property Valuation Agent
 Used by Mortgage Approval Agent to request property valuations
+Platform-compatible version using LangGraph SDK
 """
 
-import sys
-import os
 import json
 from typing import Dict, Any, Optional
-
-# Add the PropValue directory to the path so we can import from it
-propvalue_path = os.path.join(os.path.dirname(__file__), '..', 'PropValue')
-sys.path.insert(0, propvalue_path)
-
 try:
-    from a2a_client import A2APropertyValuationClient, A2ACommunicationHandler
-    PropValue_available = True
+    from langgraph_sdk import get_client
+    LangGraph_SDK_available = True
 except ImportError:
-    try:
-        from PropValue.a2a_client import A2APropertyValuationClient, A2ACommunicationHandler
-        PropValue_available = True
-    except ImportError:
-        print("Warning: PropValue agent not found. Property valuation will use mock data.")
-        A2APropertyValuationClient = None
-        A2ACommunicationHandler = None
-        PropValue_available = False
+    LangGraph_SDK_available = False
 
 class MortgagePropertyValuationClient:
     """Client for mortgage agent to communicate with property valuation agent"""
     
-    def __init__(self):
-        self.use_mock = not PropValue_available
-        if not self.use_mock:
-            self.prop_val_client = A2APropertyValuationClient(use_mock=False)
+    def __init__(self, use_mock=True, property_agent_url=None):
+        self.use_mock = use_mock
+        self.property_agent_url = property_agent_url
+        
+        # Initialize LangGraph SDK client for platform deployment
+        if not use_mock and LangGraph_SDK_available and property_agent_url:
+            try:
+                self.client = get_client(url=property_agent_url)
+                self.platform_mode = True
+            except Exception as e:
+                print(f"Warning: Could not connect to property valuation agent: {e}")
+                self.client = None
+                self.platform_mode = False
+        else:
+            self.client = None
+            self.platform_mode = False
         
     def request_property_valuation(self, property_info: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -44,43 +43,44 @@ class MortgagePropertyValuationClient:
             Valuation response formatted for mortgage processing
         """
         
-        if self.use_mock:
+        if self.use_mock or not self.platform_mode:
             return self._mock_property_valuation(property_info)
         
         try:
-            # Create standardized A2A request
-            if PropValue_available and A2ACommunicationHandler:
-                valuation_request = A2ACommunicationHandler.create_property_valuation_request(property_info)
-            else:
-                valuation_request = property_info
+            # Create standardized A2A request for platform deployment
+            valuation_request = {
+                "property_address": property_info.get("property_address", ""),
+                "property_type": property_info.get("property_type", "Single Family"),
+                "purchase_price": property_info.get("purchase_price", 0),
+                "loan_amount": property_info.get("loan_amount", 0),
+                "request_id": f"mortgage_{property_info.get('application_id', 'unknown')}",
+                "requesting_agent": "MortgageApproval"
+            }
             
-            # Send request to PropertyValuation agent
-            response = self.prop_val_client.process_valuation_request(
-                valuation_request, 
-                "MortgageApproval"
+            # Send request to PropertyValuation agent via LangGraph platform
+            response = self.client.runs.create(
+                assistant_id="property_valuation_agent",
+                input=valuation_request,
+                config={"configurable": {"enable_a2a_communication": True}}
             )
             
-            # Validate response
-            if PropValue_available and A2ACommunicationHandler:
-                is_valid = A2ACommunicationHandler.validate_a2a_response(response)
-            else:
-                is_valid = response.get('status') == 'SUCCESS'
+            # Wait for completion and get result
+            final_response = self.client.runs.wait(response["run_id"])
             
-            if is_valid and response.get('status') == 'SUCCESS':
-                # Format response for mortgage agent
-                formatted_response = self.prop_val_client.format_response_for_mortgage_agent(
-                    response['data']
-                )
+            if final_response.get("status") == "success":
+                result_data = final_response.get("output", {})
                 
                 return {
                     "status": "SUCCESS",
-                    "valuation_data": formatted_response,
-                    "raw_response": response
+                    "valuation_data": {
+                        "property_valuation": result_data.get("valuation_result", {})
+                    },
+                    "raw_response": final_response
                 }
             else:
                 return {
                     "status": "ERROR",
-                    "error_message": response.get('error_message', 'Property valuation failed'),
+                    "error_message": final_response.get("error", "Property valuation failed"),
                     "valuation_data": None
                 }
                 
