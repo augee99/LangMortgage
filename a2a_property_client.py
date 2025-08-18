@@ -181,7 +181,7 @@ class MortgagePropertyValuationClient:
             
             print(f"📤 Sending A2A request to PropValue: {self.property_agent_url}")
             
-            if False:  # Temporarily disable SDK, use HTTP for A2A
+            if self.client and LangGraph_SDK_available:  # Re-enable SDK for platform
                 # Use LangGraph SDK - try multiple assistant IDs
                 assistant_ids = [
                     "559ea5b1-8dcb-59cd-820b-2a2a6b76d7a4", # CORRECT assistant ID from platform
@@ -191,27 +191,38 @@ class MortgagePropertyValuationClient:
                     try:
                         print(f"🔍 Trying assistant_id: {assistant_id}")
                         
-                        # Create a new thread first
-                        print(f"🧵 Creating new thread...")
-                        thread = self.client.threads.create()
-                        thread_id = thread["thread_id"]
-                        print(f"✅ Thread created: {thread_id}")
+                        # Use invoke method which is simpler for A2A
+                        print(f"🚀 Invoking PropValue agent with assistant {assistant_id}")
                         
-                        # Create run with proper parameters
-                        create_params = {
-                            "thread_id": thread_id,
-                            "assistant_id": assistant_id,
-                            "input": valuation_request
-                        }
-                        
-                        print(f"🚀 Creating run with assistant {assistant_id}")
-                        response = self.client.runs.create(**create_params)
-                        run_id = response["run_id"]
-                        print(f"✅ Run created with ID: {run_id}")
-                        
-                        # Wait for completion and get result
-                        print(f"⏳ Waiting for run completion...")
-                        final_response = self.client.runs.wait(run_id)
+                        try:
+                            # Try direct invoke first
+                            invoke_params = {
+                                "input": valuation_request,
+                                "config": {
+                                    "configurable": {
+                                        "assistant_id": assistant_id
+                                    }
+                                }
+                            }
+                            
+                            final_response = self.client.invoke(**invoke_params)
+                            print(f"✅ Direct invoke successful")
+                            
+                        except Exception as invoke_error:
+                            print(f"⚠️  Direct invoke failed: {invoke_error}")
+                            print(f"🔄 Trying runs.create approach...")
+                            
+                            # Fallback to runs approach
+                            create_params = {
+                                "assistant_id": assistant_id,
+                                "input": valuation_request
+                            }
+                            
+                            response = self.client.runs.create(**create_params)
+                            run_id = response["run_id"]
+                            print(f"✅ Run created with ID: {run_id}")
+                            
+                            final_response = self.client.runs.wait(run_id)
                         print(f"📥 Final response status: {final_response.get('status')}")
                         
                         if final_response.get("status") == "success":
@@ -239,6 +250,8 @@ class MortgagePropertyValuationClient:
                             
                     except Exception as e:
                         print(f"❌ Assistant {assistant_id} error: {str(e)}")
+                        print(f"   Error type: {type(e).__name__}")
+                        print(f"   Full error details: {repr(e)}")
                         continue
                 
                 # If all assistant IDs failed
@@ -314,6 +327,8 @@ class MortgagePropertyValuationClient:
                             )
                             
                             print(f"   📥 HTTP {response.status_code}: {endpoint}")
+                            if response.status_code != 200:
+                                print(f"      Response: {response.text[:200]}...")
                             
                             if response.status_code == 200:
                                 try:
