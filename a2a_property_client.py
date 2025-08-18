@@ -108,7 +108,31 @@ class MortgagePropertyValuationClient:
             try:
                 if LangGraph_SDK_available and get_client:
                     print(f"🔗 Attempting SDK connection to: {self.property_agent_url}")
-                    self.client = get_client(url=self.property_agent_url)
+                    
+                    # Get LangGraph API key from environment
+                    api_key = os.getenv('LANGGRAPH_API_KEY')
+                    if not api_key:
+                        print("⚠️  LANGGRAPH_API_KEY not found in environment")
+                        print("   Loading from LangPlatform/.env file...")
+                        try:
+                            # Try to load from LangPlatform/.env
+                            with open('../LangPlatform/.env', 'r') as f:
+                                for line in f:
+                                    if line.startswith('LANGGRAPH_API_KEY='):
+                                        api_key = line.split('=', 1)[1].strip()
+                                        os.environ['LANGGRAPH_API_KEY'] = api_key
+                                        print(f"   ✅ Loaded API key from LangPlatform/.env")
+                                        break
+                        except FileNotFoundError:
+                            print("   ❌ LangPlatform/.env not found")
+                    
+                    if api_key:
+                        print(f"🔑 Using LangGraph API key: {api_key[:20]}...")
+                        self.client = get_client(url=self.property_agent_url, api_key=api_key)
+                    else:
+                        print(f"🔗 Attempting connection without explicit API key")
+                        self.client = get_client(url=self.property_agent_url)
+                    
                     self.platform_mode = True
                     print(f"✅ SDK connected to PropValue agent: {self.property_agent_url}")
                 else:
@@ -230,6 +254,25 @@ class MortgagePropertyValuationClient:
                     "Content-Type": "application/json",
                     "Accept": "application/json"
                 }
+                
+                # Add API key to headers if available
+                api_key = os.getenv('LANGGRAPH_API_KEY')
+                if not api_key:
+                    # Try to load from LangPlatform/.env
+                    try:
+                        with open('../LangPlatform/.env', 'r') as f:
+                            for line in f:
+                                if line.startswith('LANGGRAPH_API_KEY='):
+                                    api_key = line.split('=', 1)[1].strip()
+                                    break
+                    except FileNotFoundError:
+                        pass
+                
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+                    print(f"🔑 Using API key for HTTP requests: {api_key[:20]}...")
+                else:
+                    print("⚠️  No API key found for HTTP requests")
                 
                 # Try different API endpoints
                 endpoints = [
