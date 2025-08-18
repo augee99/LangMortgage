@@ -109,44 +109,31 @@ class MortgagePropertyValuationClient:
                 if LangGraph_SDK_available and get_client:
                     print(f"🔗 Attempting SDK connection to: {self.property_agent_url}")
                     
-                    # On LangGraph platform, API key is handled automatically
-                    # Only try to load API key for local development
+                    # API key is REQUIRED for A2A communication, even on platform
                     api_key = os.getenv('LANGGRAPH_API_KEY')
                     
-                    # Check if we're running on LangGraph platform
-                    platform_indicators = [
-                        os.getenv('LANGGRAPH_CLOUD'),
-                        os.getenv('LANGGRAPH_PLATFORM'), 
-                        'langgraph.cloud' in os.getenv('HOSTNAME', ''),
-                        '/api/' in os.getenv('PATH_INFO', ''),
-                        'langgraph-api' in str(os.getenv('SERVER_SOFTWARE', ''))
-                    ]
+                    if not api_key:
+                        print("🔍 LANGGRAPH_API_KEY not found in environment")
+                        print("   Attempting to load from LangPlatform/.env...")
+                        try:
+                            # Try to load from LangPlatform/.env
+                            with open('../LangPlatform/.env', 'r') as f:
+                                for line in f:
+                                    if line.startswith('LANGGRAPH_API_KEY='):
+                                        api_key = line.split('=', 1)[1].strip()
+                                        os.environ['LANGGRAPH_API_KEY'] = api_key
+                                        print(f"   ✅ Loaded API key from LangPlatform/.env")
+                                        break
+                        except FileNotFoundError:
+                            print("   ❌ LangPlatform/.env not found")
                     
-                    if any(platform_indicators):
-                        print("🔗 Platform deployment - using automatic authentication")
-                        self.client = get_client(url=self.property_agent_url)
+                    if api_key:
+                        print(f"🔑 Using LangGraph API key: {api_key[:20]}...")
+                        self.client = get_client(url=self.property_agent_url, api_key=api_key)
                     else:
-                        # Local development - try to load API key
-                        if not api_key:
-                            print("🔍 Local development - loading API key...")
-                            try:
-                                # Try to load from LangPlatform/.env
-                                with open('../LangPlatform/.env', 'r') as f:
-                                    for line in f:
-                                        if line.startswith('LANGGRAPH_API_KEY='):
-                                            api_key = line.split('=', 1)[1].strip()
-                                            os.environ['LANGGRAPH_API_KEY'] = api_key
-                                            print(f"   ✅ Loaded API key from LangPlatform/.env")
-                                            break
-                            except FileNotFoundError:
-                                print("   ⚠️  LangPlatform/.env not found")
-                        
-                        if api_key:
-                            print(f"🔑 Using LangGraph API key for local development")
-                            self.client = get_client(url=self.property_agent_url, api_key=api_key)
-                        else:
-                            print(f"🔗 Attempting connection without API key")
-                            self.client = get_client(url=self.property_agent_url)
+                        print(f"❌ No API key available - A2A communication will likely fail")
+                        print(f"   Set LANGGRAPH_API_KEY environment variable")
+                        self.client = get_client(url=self.property_agent_url)
                     
                     self.platform_mode = True
                     print(f"✅ SDK connected to PropValue agent: {self.property_agent_url}")
@@ -270,37 +257,25 @@ class MortgagePropertyValuationClient:
                     "Accept": "application/json"
                 }
                 
-                # Check if we're on platform (automatic auth) or local (need API key)
-                platform_indicators = [
-                    os.getenv('LANGGRAPH_CLOUD'),
-                    os.getenv('LANGGRAPH_PLATFORM'), 
-                    'langgraph.cloud' in os.getenv('HOSTNAME', ''),
-                    '/api/' in os.getenv('PATH_INFO', ''),
-                    'langgraph-api' in str(os.getenv('SERVER_SOFTWARE', ''))
-                ]
+                # API key is REQUIRED for HTTP A2A requests
+                api_key = os.getenv('LANGGRAPH_API_KEY')
+                if not api_key:
+                    # Try to load from LangPlatform/.env
+                    try:
+                        with open('../LangPlatform/.env', 'r') as f:
+                            for line in f:
+                                if line.startswith('LANGGRAPH_API_KEY='):
+                                    api_key = line.split('=', 1)[1].strip()
+                                    break
+                    except FileNotFoundError:
+                        pass
                 
-                if any(platform_indicators):
-                    print("🔗 Platform HTTP - using automatic authentication")
-                    # Platform handles auth automatically, no manual API key needed
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+                    print(f"🔑 Using API key for HTTP A2A requests: {api_key[:20]}...")
                 else:
-                    # Local development - add API key to headers
-                    api_key = os.getenv('LANGGRAPH_API_KEY')
-                    if not api_key:
-                        # Try to load from LangPlatform/.env
-                        try:
-                            with open('../LangPlatform/.env', 'r') as f:
-                                for line in f:
-                                    if line.startswith('LANGGRAPH_API_KEY='):
-                                        api_key = line.split('=', 1)[1].strip()
-                                        break
-                        except FileNotFoundError:
-                            pass
-                    
-                    if api_key:
-                        headers["Authorization"] = f"Bearer {api_key}"
-                        print(f"🔑 Using API key for local HTTP requests")
-                    else:
-                        print("⚠️  No API key found for local HTTP requests")
+                    print("❌ No API key found - HTTP A2A requests will likely fail")
+                    print("   Set LANGGRAPH_API_KEY environment variable")
                 
                 # Try different API endpoints
                 endpoints = [
