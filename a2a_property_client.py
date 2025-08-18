@@ -75,10 +75,7 @@ class MortgagePropertyValuationClient:
                 print("🔧 Platform detected but no PropValue URL - attempting to use default")
                 # Try common PropValue deployment names
                 possible_urls = [
-                    "https://fnma-property-value-agent-a-847d714161b5593186939c2aaa3e7c33.us.langgraph.app",
-                    "https://property-valuation-agent.langgraph.cloud",
-                    "https://propvalue.langgraph.cloud", 
-                    "https://property-value.langgraph.cloud"
+                    "https://fnma-property-value-agent-a-847d714161b5593186939c2aaa3e7c33.us.langgraph.app"
                 ]
                 
                 for url in possible_urls:
@@ -184,37 +181,37 @@ class MortgagePropertyValuationClient:
             
             print(f"📤 Sending A2A request to PropValue: {self.property_agent_url}")
             
-            if self.client and LangGraph_SDK_available:
+            if False:  # Temporarily disable SDK, use HTTP for A2A
                 # Use LangGraph SDK - try multiple assistant IDs
                 assistant_ids = [
                     "559ea5b1-8dcb-59cd-820b-2a2a6b76d7a4", # CORRECT assistant ID from platform
-                    "property_valuation_agent",              # Graph ID
-                    "123e4567-e89b-12d3-a456-426614174000", # Previous attempt
-                    "995669b4-14a3-4352-a6d4-2b269c9b74da", # Previous attempt
-                    "fnma-property-value-agent-a",           # Based on deployment name
-                    "property_value_agent",                  # Underscore format
-                    "property-value-agent",                  # Dash format
-                    "propvalue",                             # Short name
                 ]
                 
                 for assistant_id in assistant_ids:
                     try:
                         print(f"🔍 Trying assistant_id: {assistant_id}")
                         
+                        # Create a new thread first
+                        print(f"🧵 Creating new thread...")
+                        thread = self.client.threads.create()
+                        thread_id = thread["thread_id"]
+                        print(f"✅ Thread created: {thread_id}")
+                        
+                        # Create run with proper parameters
                         create_params = {
-                            "thread_id": None,  # Let LangGraph create a new thread
-                            "input": valuation_request,
-                            "config": {"configurable": {"enable_a2a_communication": True}}
+                            "thread_id": thread_id,
+                            "assistant_id": assistant_id,
+                            "input": valuation_request
                         }
                         
-                        if assistant_id:
-                            create_params["assistant_id"] = assistant_id
-                        
+                        print(f"🚀 Creating run with assistant {assistant_id}")
                         response = self.client.runs.create(**create_params)
-                        print(f"✅ Run created with ID: {response.get('run_id')}")
+                        run_id = response["run_id"]
+                        print(f"✅ Run created with ID: {run_id}")
                         
                         # Wait for completion and get result
-                        final_response = self.client.runs.wait(response["run_id"])
+                        print(f"⏳ Waiting for run completion...")
+                        final_response = self.client.runs.wait(run_id)
                         print(f"📥 Final response status: {final_response.get('status')}")
                         
                         if final_response.get("status") == "success":
