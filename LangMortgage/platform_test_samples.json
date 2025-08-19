@@ -1,0 +1,77 @@
+{
+  "strong_application": {
+    "applicant_name": "John Smith",
+    "credit_score": 780,
+    "annual_income": 95000,
+    "employment_years": 5,
+    "loan_amount": 300000,
+    "property_value": 400000,
+    "down_payment": 100000,
+    "debt_to_income_ratio": 0.25,
+    "property_address": "456 Oak Avenue, Dallas, TX 75201",
+    "property_type": "single_family",
+    "square_footage": 2400,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "year_built": 2018,
+    "lot_size": 0.3,
+    "loan_purpose": "purchase"
+  },
+  
+  "marginal_application": {
+    "applicant_name": "Maria Garcia",
+    "credit_score": 650,
+    "annual_income": 62000,
+    "employment_years": 2,
+    "loan_amount": 280000,
+    "property_value": 320000,
+    "down_payment": 40000,
+    "debt_to_income_ratio": 0.42,
+    "property_address": "789 Pine Street, Houston, TX 77002",
+    "property_type": "townhouse",
+    "square_footage": 1800,
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "year_built": 2010,
+    "lot_size": 0.15,
+    "loan_purpose": "purchase"
+  },
+  
+  "high_risk_application": {
+    "applicant_name": "Robert Wilson",
+    "credit_score": 590,
+    "annual_income": 45000,
+    "employment_years": 1,
+    "loan_amount": 250000,
+    "property_value": 260000,
+    "down_payment": 10000,
+    "debt_to_income_ratio": 0.48,
+    "property_address": "321 Elm Drive, San Antonio, TX 78201",
+    "property_type": "condo",
+    "square_footage": 1200,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "year_built": 2005,
+    "lot_size": 0,
+    "loan_purpose": "purchase"
+  },
+
+  "refinance_application": {
+    "applicant_name": "Jennifer Brown",
+    "credit_score": 740,
+    "annual_income": 78000,
+    "employment_years": 4,
+    "loan_amount": 220000,
+    "property_value": 350000,
+    "down_payment": 0,
+    "debt_to_income_ratio": 0.32,
+    "property_address": "567 Maple Lane, Fort Worth, TX 76102",
+    "property_type": "single_family",
+    "square_footage": 2000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "year_built": 2012,
+    "lot_size": 0.2,
+    "loan_purpose": "refinance"
+  }
+}

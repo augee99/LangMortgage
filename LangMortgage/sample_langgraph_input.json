@@ -1,0 +1,18 @@
+{
+  "applicant_name": "Sarah Johnson",
+  "credit_score": 720,
+  "annual_income": 85000,
+  "employment_years": 3.5,
+  "loan_amount": 320000,
+  "property_value": 400000,
+  "down_payment": 80000,
+  "debt_to_income_ratio": 0.28,
+  "property_address": "123 Main St, Austin, TX 78701",
+  "property_type": "single_family",
+  "square_footage": 2200,
+  "bedrooms": 4,
+  "bathrooms": 2.5,
+  "year_built": 2015,
+  "lot_size": 0.25,
+  "loan_purpose": "purchase"
+}
